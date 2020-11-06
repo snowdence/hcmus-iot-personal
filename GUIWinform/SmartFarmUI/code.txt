@@ -1,0 +1,70 @@
+﻿
+        #region CONSOLE_PROGRAM
+        void run_test()
+        {
+
+            ISerialConnection connection = GetConnection();
+            ArduinoSession session = null;
+            if (connection != null)
+            {
+                session = new ArduinoSession(connection);
+                session.StringReceived += Session_StringReceived;
+                session.MessageReceived += Session_MessageReceived;
+
+            }
+
+            PerformBasicTest(session);
+
+
+
+
+            Console.WriteLine("Press a key");
+            Console.ReadKey(true);
+        }
+
+        private void Session_MessageReceived(object sender, FirmataMessageEventArgs eventArgs)
+        {
+            if (LOG_ENABLE)
+            {
+                Console.WriteLine("Received Message " + eventArgs.Value);
+            }
+            var value = eventArgs.Value;
+            var msg = value.Value;
+            if (msg.GetType() == typeof(Solid.Arduino.Firmata.StringData))
+            {
+                StringData data = (StringData)msg;
+                Console.WriteLine("String data from arduino: " + data.Text);
+            }
+        }
+
+        private void Session_StringReceived(object sender, StringEventArgs eventArgs)
+        {
+
+            if (LOG_ENABLE)
+            {
+                Console.WriteLine("Received Message " + eventArgs.Text);
+            }
+        }
+
+        private ISerialConnection GetConnection()
+        {
+            Console.WriteLine("Searching Arduino connection...");
+            ISerialConnection connection = EnhancedSerialConnection.Find();
+
+            if (connection == null)
+                Console.WriteLine("No connection found. Make shure your Arduino board is attached to a USB port.");
+            else
+                Console.WriteLine($"Connected to port {connection.PortName} at {connection.BaudRate} baud.");
+
+            return connection;
+        }
+
+        private void PerformBasicTest(IFirmataProtocol session)
+        {
+            var firmware = session.GetFirmware();
+            Console.WriteLine($"Firmware: {firmware.Name} version {firmware.MajorVersion}.{firmware.MinorVersion}");
+            var protocolVersion = session.GetProtocolVersion();
+            Console.WriteLine($"Firmata protocol version {protocolVersion.Major}.{protocolVersion.Minor}");
+            session.SendStringData("String message");
+        }
+        #endregion
